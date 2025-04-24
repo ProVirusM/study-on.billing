@@ -6,7 +6,7 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-
+use App\Dto\UserDto;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 //#[ORM\Table(name: '`billing_user`')]
 //#[ORM\Table(name: '`user`')]
@@ -34,6 +34,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
+    public static function fromDto(UserDto $userDto): self
+    {
+        $user = new self();
+        $user->setEmail($userDto->username);
+        return $user;
+    }
     public function getId(): ?int
     {
         return $this->id;
