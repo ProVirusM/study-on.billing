@@ -33,12 +33,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column]
     private ?string $password = null;
-
+    #[ORM\Column(type: 'float', nullable: true, options: ['default' => 0])]
+    private ?float $balance = 0.0;
     public static function fromDto(UserDto $userDto): self
     {
         $user = new self();
         $user->setEmail($userDto->username);
         return $user;
+    }
+    public function getBalance(): float
+    {
+        return $this->balance;
+    }
+
+    public function setBalance(float $balance): self
+    {
+        $this->balance = $balance;
+        return $this;
     }
     public function getId(): ?int
     {

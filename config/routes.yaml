@@ -5,3 +5,9 @@ controllers:
     type: attribute
 #    api_login_check:
 #        path: /api/login_check
+#api_doc_json:
+#    resource: '@NelmioApiDocBundle/Resources/config/routing/swagger.json'
+#    prefix: /api/v1/doc
+app.swagger_json:
+    path: /api/v1/doc
+    defaults: { _controller: nelmio_api_doc.controller.swagger }

@@ -22,6 +22,7 @@ class UserFixtures extends Fixture
         $user = new User();
         $user->setEmail('user@example.com');
         $user->setRoles(['ROLE_USER']);
+        $user->setBalance(45213.12);
         $hashedPassword = $this->passwordHasher->hashPassword(
             $user,
             'user_password'
@@ -33,6 +34,7 @@ class UserFixtures extends Fixture
         $admin = new User();
         $admin->setEmail('admin@example.com');
         $admin->setRoles(['ROLE_SUPER_ADMIN']);
+        $admin->setBalance(54213.12);
         $hashedPassword = $this->passwordHasher->hashPassword(
             $admin,
             'admin_password'
