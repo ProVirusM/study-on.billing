@@ -102,4 +102,81 @@ class AuthControllerTest extends WebTestCase
         $data = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertEquals('user@example.com', $data['username']);
     }
+    public function testRegisterSuccess(): void
+    {
+        $this->client->request(
+            'POST',
+            '/api/v1/register',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode([
+                'username' => 'newuser@example.com',
+                'password' => 'new_password'
+            ])
+        );
+
+        $this->assertEquals(201, $this->client->getResponse()->getStatusCode());
+
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('token', $data);
+    }
+
+    public function testRegisterDuplicateEmail(): void
+    {
+        // Повторная регистрация того же email
+        $this->client->request(
+            'POST',
+            '/api/v1/register',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode([
+                'username' => 'user@example.com',
+                'password' => 'another_password'
+            ])
+        );
+
+        $this->assertEquals(400, $this->client->getResponse()->getStatusCode());
+
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('error', $data);
+        $this->assertEquals('User already exists', $data['error']);
+    }
+
+    public function testRegisterValidationError(): void
+    {
+        // Пустые поля
+        $this->client->request(
+            'POST',
+            '/api/v1/register',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode([
+                'username' => '',
+                'password' => ''
+            ])
+        );
+
+        $this->assertEquals(400, $this->client->getResponse()->getStatusCode());
+
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('errors', $data);
+        $this->assertIsArray($data['errors']);
+        $this->assertNotEmpty($data['errors']);
+    }
+
+    public function testUnauthorizedAccessToCurrentUser(): void
+    {
+        $this->client->request('GET', '/api/v1/users/current');
+
+        $this->assertEquals(401, $this->client->getResponse()->getStatusCode());
+
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('message', $data);
+        $this->assertEquals('JWT Token not found', $data['message']);
+    }
+
 }
