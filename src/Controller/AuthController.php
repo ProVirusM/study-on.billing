@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Dto\UserDto;
 use App\Entity\User;
+
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,13 +18,15 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use OpenApi\Attributes as OA;
 use JMS\Serializer\SerializerInterface;
-
+use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
+use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 
 
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 
 class AuthController extends AbstractController
 {
+
     #[Route('/api/v1/auth', name: 'api_auth', methods: ['POST'])]
     #[OA\Post(
         path: '/api/v1/auth',
@@ -32,11 +35,11 @@ class AuthController extends AbstractController
         requestBody: new OA\RequestBody(
             description: 'User credentials',
             content: new OA\JsonContent(
+                required: ['username', 'password'],
                 properties: [
                     new OA\Property(property: 'username', type: 'string', example: 'user@example.com'),
                     new OA\Property(property: 'password', type: 'string', example: 'password'),
                 ],
-                required: ['username', 'password'],
                 type: 'object'
             )
         ),
@@ -46,7 +49,8 @@ class AuthController extends AbstractController
                 description: 'Authentication successful',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'token', type: 'string', example: 'jwt.token.here')
+                        new OA\Property(property: 'token', type: 'string', example: 'jwt.token.here'),
+new OA\Property(property: 'refresh_token', type: 'string', example: 'your-refresh-token-here')
                     ],
                     type: 'object'
                 )
@@ -77,11 +81,11 @@ class AuthController extends AbstractController
         summary: 'Register new user',
         requestBody: new OA\RequestBody(
             content: new OA\JsonContent(
+                required: ['username', 'password'],
                 properties: [
                     new OA\Property(property: 'username', type: 'string', example: 'newuser@example.com'),
                     new OA\Property(property: 'password', type: 'string', example: 'password'),
-                ],
-                required: ['username', 'password']
+                ]
             )
         ),
         responses: [
@@ -90,7 +94,8 @@ class AuthController extends AbstractController
                 description: 'User created successfully',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'token', type: 'string', example: 'jwt.token.here')
+                        new OA\Property(property: 'token', type: 'string', example: 'jwt.token.here'),
+                        new OA\Property(property: 'refresh_token', type: 'string', example: 'your-refresh-token-here')
                     ]
                 )
             ),
@@ -110,7 +115,9 @@ class AuthController extends AbstractController
         ValidatorInterface $validator,
         EntityManagerInterface $entityManager,
         UserPasswordHasherInterface $passwordHasher,
-        JWTTokenManagerInterface $JWTManager
+        JWTTokenManagerInterface $JWTManager,
+        RefreshTokenGeneratorInterface $refreshTokenGenerator,
+        RefreshTokenManagerInterface $refreshTokenManager
     ): JsonResponse {
         $serializer = SerializerBuilder::create()->build();
         $userDto = $serializer->deserialize($request->getContent(), UserDto::class, 'json');
@@ -133,11 +140,15 @@ class AuthController extends AbstractController
         $user = User::fromDto($userDto);
         $user->setPassword($passwordHasher->hashPassword($user, $userDto->password));
         $user->setRoles(['ROLE_USER']);
-
+        $refreshToken = $refreshTokenGenerator->createForUserWithTtl(
+            $user,
+            (new \DateTime())->modify('+1 month')->getTimestamp()
+        );
+        $refreshTokenManager->save($refreshToken);
         $entityManager->persist($user);
         $entityManager->flush();
 
-        return new JsonResponse(['token' => $JWTManager->create($user)], 201);
+        return new JsonResponse(['token' => $JWTManager->create($user),'refresh_token' => $refreshToken->getRefreshToken()], 201);
     }
     #[Route('/api/v1/users/current', name: 'api_current_user', methods: ['GET'])]
     #[OA\Get(
@@ -182,5 +193,43 @@ class AuthController extends AbstractController
             'roles' => $user->getRoles(),
             'balance' => $user->getBalance()
         ]);
+    }
+    #[Route('/api/v1/token/refresh', name: 'api_token_refresh', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/v1/token/refresh',
+        summary: 'Refresh JWT token',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'refresh_token', type: 'string', example: 'your-refresh-token-here')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'New JWT token',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'token', type: 'string', example: 'new.jwt.token.here')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Invalid or expired refresh token',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'code', type: 'integer', example: 401),
+                        new OA\Property(property: 'message', type: 'string', example: 'Not privileged to request the resource.')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function refreshTokenDocPlaceholder(): void
+    {
+        // Этот метод только для документации
     }
 }
