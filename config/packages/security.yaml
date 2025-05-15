@@ -44,12 +44,15 @@ security:
     access_control:
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/api/v1/courses, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/courses/\w+, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/auth, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/v1/token/refresh, roles: PUBLIC_ACCESS }
+
 when@test:
     security:
         password_hashers:

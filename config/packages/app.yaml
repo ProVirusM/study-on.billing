@@ -1,0 +1,2 @@
+parameters:
+  app.initial_balance: 1000.00

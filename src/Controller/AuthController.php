@@ -5,9 +5,11 @@ namespace App\Controller;
 use App\Dto\UserDto;
 use App\Entity\User;
 
+use App\Service\PaymentService;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
@@ -26,7 +28,16 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 
 class AuthController extends AbstractController
 {
+    private float $initialBalance;
+    private PaymentService $paymentService;
 
+    public function __construct(
+        PaymentService $paymentService,
+        #[Autowire('%app.initial_balance%')] float $initialBalance,
+    ) {
+        $this->paymentService = $paymentService;
+        $this->initialBalance = $initialBalance;
+    }
     #[Route('/api/v1/auth', name: 'api_auth', methods: ['POST'])]
     #[OA\Post(
         path: '/api/v1/auth',
@@ -117,7 +128,8 @@ new OA\Property(property: 'refresh_token', type: 'string', example: 'your-refres
         UserPasswordHasherInterface $passwordHasher,
         JWTTokenManagerInterface $JWTManager,
         RefreshTokenGeneratorInterface $refreshTokenGenerator,
-        RefreshTokenManagerInterface $refreshTokenManager
+        RefreshTokenManagerInterface $refreshTokenManager,
+
     ): JsonResponse {
         $serializer = SerializerBuilder::create()->build();
         $userDto = $serializer->deserialize($request->getContent(), UserDto::class, 'json');
@@ -147,6 +159,7 @@ new OA\Property(property: 'refresh_token', type: 'string', example: 'your-refres
         $refreshTokenManager->save($refreshToken);
         $entityManager->persist($user);
         $entityManager->flush();
+        $this->paymentService->deposit($user, $this->initialBalance);
 
         return new JsonResponse(['token' => $JWTManager->create($user),'refresh_token' => $refreshToken->getRefreshToken()], 201);
     }
