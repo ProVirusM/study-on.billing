@@ -12,7 +12,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
-
+use OpenApi\Attributes as OA;
 
 class TransactionController extends AbstractController
 {
@@ -23,6 +23,54 @@ class TransactionController extends AbstractController
     }
 
     #[Route('/api/v1/transactions', name: 'api_transactions_list', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/v1/transactions',
+        description: 'Get user transaction history with optional filtering',
+        summary: 'Get transactions',
+        security: [['bearerAuth' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'filter[type]',
+                description: 'Filter by transaction type',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['payment', 'deposit'])
+            ),
+            new OA\Parameter(
+                name: 'filter[course_code]',
+                description: 'Filter by course code',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'filter[skip_expired]',
+                description: 'Skip expired rentals',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'boolean')
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'List of transactions',
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                            new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                            new OA\Property(property: 'type', type: 'string', enum: ['payment', 'deposit'], example: 'payment'),
+                            new OA\Property(property: 'course_code', type: 'string', example: 'course-1', nullable: true),
+                            new OA\Property(property: 'amount', type: 'string', example: '100.00')
+                        ],
+                        type: 'object'
+                    )
+                )
+            )
+        ]
+    )]
     public function transactions(Request $request): JsonResponse
     {
         //$filter = $request->query->get('filter', []);
@@ -36,6 +84,7 @@ class TransactionController extends AbstractController
             return [
                 'id' => $t->getId(),
                 'created_at' => $t->getCreatedAt()->format(\DateTimeInterface::ATOM),
+                'time_arend' => $t->getTimeArend()?->format(\DateTimeInterface::ATOM),
                 'type' => TransactionType::from($t->getTypeOperations())->label(),
                 'course_code' => $t->getCourse()?->getCode(),
                 'amount' => number_format($t->getAmount(), 2),

@@ -25,4 +25,12 @@ enum CourseType: int
             default => null,
         };
     }
+    public function code(): int
+    {
+        return match ($this) {
+            self::RENT => 1,
+            self::FREE => 0,
+            self::BUY => 2,
+        };
+    }
 }

@@ -16,6 +16,8 @@ class Course
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $title = null;
     #[ORM\Column(length: 255)]
     private ?string $code = null;
 
@@ -41,6 +43,16 @@ class Course
         return $this->id;
     }
 
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(string $title): self
+    {
+        $this->title = $title;
+        return $this;
+    }
     public function getCode(): ?string
     {
         return $this->code;

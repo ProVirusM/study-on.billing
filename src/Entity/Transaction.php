@@ -15,10 +15,11 @@ class Transaction
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false,onDelete: 'CASCADE')]
     private ?User $users = null;
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?Course $course = null;
 
     #[ORM\Column(type: Types::SMALLINT)]
@@ -30,7 +31,8 @@ class Transaction
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $created_at = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $time_arend = null;
 
     public function getId(): ?int
@@ -103,7 +105,7 @@ class Transaction
         return $this->time_arend;
     }
 
-    public function setTimeArend(\DateTimeInterface $time_arend): static
+    public function setTimeArend(?\DateTimeInterface $time_arend): static
     {
         $this->time_arend = $time_arend;
 

@@ -20,7 +20,8 @@ class PaymentService
             $transaction = new Transaction();
             $transaction->setUsers($user);
             $transaction->setAmount($amount);
-            $transaction->setTypeOperations(TransactionType::DEPOSIT->value);
+            //$transaction->setTypeOperations(TransactionType::DEPOSIT->value);
+            $transaction->setTypeOperations(0);
             $transaction->setCreatedAt(new \DateTimeImmutable());
 
             $user->setBalance($user->getBalance() + $amount);
@@ -50,10 +51,10 @@ class PaymentService
                 $transaction->setTimeArend((new \DateTimeImmutable())->modify('+7 days'));
             }
             if ($course->getType() === 2) { // RENT
-                $transaction->setTimeArend((new \DateTimeImmutable())->modify('+7 days'));
+                $transaction->setTimeArend(null);
             }
             if ($course->getType() === 3) { // RENT
-                $transaction->setTimeArend((new \DateTimeImmutable())->modify('+7 days'));
+                $transaction->setTimeArend(null);
             }
 
             $user->setBalance($user->getBalance() - $price);

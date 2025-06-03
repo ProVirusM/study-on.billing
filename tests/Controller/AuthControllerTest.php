@@ -3,37 +3,40 @@
 namespace App\Tests\Controller;
 
 use App\Entity\User;
+use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
+use Doctrine\Common\DataFixtures\Loader;
+use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AuthControllerTest extends WebTestCase
 {
-    private EntityManagerInterface $em;
+    private ?EntityManagerInterface $entityManager = null;
     private UserPasswordHasherInterface $hasher;
     private $client;
 
+
     protected function setUp(): void
     {
-        self::ensureKernelShutdown();
+        parent::setUp();
+
         $this->client = static::createClient();
+        $this->entityManager = self::getContainer()->get('doctrine')->getManager();
+        $passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
 
-        $container = $this->client->getContainer();
+        // Очистка базы
+        $purger = new ORMPurger($this->entityManager);
+        $purger->purge();
 
-        $this->em = $container->get(EntityManagerInterface::class);
-        $this->hasher = $container->get(UserPasswordHasherInterface::class);
+        // Загрузка фикстур
+        $loader = new Loader();
+        $loader->addFixture(new \App\DataFixtures\TransactionFixtures($passwordHasher));
 
-        // Очистка пользователей перед каждым тестом
-        $this->em->createQuery('DELETE FROM App\Entity\User')->execute();
+        $executor = new ORMExecutor($this->entityManager, $purger);
+        $executor->execute($loader->getFixtures());
 
-        // Создание тестового пользователя
-        $user = new User();
-        $user->setEmail('user@example.com');
-        $user->setPassword($this->hasher->hashPassword($user, 'user_password'));
-        $user->setRoles(['ROLE_USER']);
 
-        $this->em->persist($user);
-        $this->em->flush();
     }
 
     public function testAuthSuccess()
@@ -178,5 +181,6 @@ class AuthControllerTest extends WebTestCase
         $this->assertArrayHasKey('message', $data);
         $this->assertEquals('JWT Token not found', $data['message']);
     }
+
 
 }
