@@ -28,7 +28,7 @@ class CourseService
         $course = new Course();
         $course->setTitle($courseDto->getTitle())
             ->setCode($courseDto->getCode())
-            ->setType(CourseType::fromLabel($courseDto->getType())->code())
+            ->setType(CourseType::byString($courseDto->getType())->code())
             ->setPrice($courseDto->getPrice());
         return $this->courseRepository->persistCourse($course);
     }
@@ -38,7 +38,18 @@ class CourseService
         if ($course === null) {
             throw new HttpException(404, 'Курс не найден');
         }
+
+        // Проверяем, меняется ли код
+        if ($courseDto->getCode() !== null && $courseDto->getCode() !== $course->getCode()) {
+            // Проверяем, что новый код не занят другим курсом
+            $existingCourse = $this->courseRepository->findOneBy(['code' => $courseDto->getCode()]);
+            if ($existingCourse !== null) {
+                throw new HttpException(422, 'Курс с таким кодом уже существует');
+            }
+        }
+
         $course = $this->updateFieldCourse($course, $courseDto);
+
         return $this->courseRepository->persistCourse($course);
     }
 
@@ -48,10 +59,17 @@ class CourseService
         if ($courseDto->getType() !== null) {
             $type = CourseType::fromLabel($courseDto->getType())->code();
         }
-        $course->setTitle($courseDto->getTitle() ?? $course->getTitle())
-            ->setCode($courseDto->getCode() ?? $course->getCode())
-            ->setType($type ?? $course->getType())
+
+        $course->setTitle($courseDto->getTitle() ?? $course->getTitle());
+
+        // Обновляем code только если он передан в dto и отличается от текущего
+        if ($courseDto->getCode() !== null && $courseDto->getCode() !== $course->getCode()) {
+            $course->setCode($courseDto->getCode());
+        }
+
+        $course->setType($type ?? $course->getType())
             ->setPrice($courseDto->getPrice() ?? $course->getPrice());
+
         return $course;
     }
 

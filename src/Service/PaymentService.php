@@ -7,11 +7,12 @@ use App\Entity\Course;
 use App\Enum\TransactionType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-
+use App\Service\OrderNotificationsService;
 class PaymentService
 {
     public function __construct(
         private EntityManagerInterface $em,
+        private OrderNotificationsService $orderNotificationsService,
     ) {}
 
     public function deposit(User $user, float $amount): void
@@ -61,7 +62,7 @@ class PaymentService
 
             $this->em->persist($transaction);
             $this->em->persist($user);
-
+            $this->orderNotificationsService->sendNotify($user, $transaction);
             return $transaction;
         });
     }

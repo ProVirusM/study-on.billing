@@ -1,0 +1,8 @@
+{% extends 'email.html.twig' %}
+
+{% block title %}Уведомление о покупке курса{% endblock %}
+
+{% block body %}
+    Куплен/Арендован курс <b>{{ courseTitle }}</b> на сумму <i>{{ sum }}</i> рублей<br/>
+    Дата и время: {{ date }}
+{% endblock %}

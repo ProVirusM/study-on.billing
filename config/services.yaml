@@ -22,3 +22,11 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+    Symfony\Component\Mailer\Mailer:
+        public: true
+    App\Service\Email\StudyOnMailer:
+        arguments:
+            $mailFrom: '%env(MAIL_FROM)%'
+    App\Service\PaymentReportService:
+        arguments:
+            $reportMail: '%env(REPORT_MAIL)%'

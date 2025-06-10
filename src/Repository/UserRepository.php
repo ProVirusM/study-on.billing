@@ -33,6 +33,30 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
+    /**
+     * @throws \DateMalformedStringException
+     */
+    public function findUsersWithExpiresCourses(): array
+    {
+        $qb = $this->getEntityManager()->createQueryBuilder();
+        $qb->select('u.id', 'u.email', 't.id', 't.time_arend', 'c.title')
+            ->from('App\Entity\User', 'u')
+            ->join('u.transactions', 't')
+            ->join('t.course', 'c')
+            ->where('t.time_arend BETWEEN :tomorrow_start AND :tomorrow_end')
+            ->setParameter('tomorrow_start', new \DateTime('tomorrow'))
+            ->setParameter('tomorrow_end', (new \DateTime('tomorrow'))->modify('+1 day'));
+        $result = $qb->getQuery()->getResult();
+        $courses = [];
+        foreach ($result as $course) {
+            $courses[$course['email']][] = [
+                'time_arend' => $course['time_arend'],
+                'title' => $course['title'],
+            ];
+        }
+        return $courses;
+    }
+
     //    /**
     //     * @return User[] Returns an array of User objects
     //     */

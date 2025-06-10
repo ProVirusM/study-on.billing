@@ -1,0 +1,30 @@
+{% extends 'email.html.twig' %}
+
+{% block title %} Отчет по оплатам за месяц {% endblock %}
+
+{% block body %}
+    <div>Отчет об оплаченных курсах за период {{ dateStart }} - {{ dateEnd }}</div>
+    <br/>
+    <table style="border: 1px solid gray;">
+        <thead>
+        <tr>
+            <th style="border: 1px solid gray; padding: 7px;">Название курса</th>
+            <th style="border: 1px solid gray; padding: 7px;">Тип курса</th>
+            <th style="border: 1px solid gray; padding: 7px;">Число аренд/покупок</th>
+            <th style="border: 1px solid gray; padding: 7px;">Общая сумма</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for course in courses %}
+            <tr>
+                <td style="border: 1px solid gray; padding: 7px;">{{ course.title }}</td>
+                <td style="border: 1px solid gray; padding: 7px;">{{ course.type }}</td>
+                <td style="border: 1px solid gray; padding: 7px;">{{ course.count }}</td>
+                <td style="border: 1px solid gray; padding: 7px;">{{ course.sum }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <br/>
+    <div>Итого {{ totalSum }}</div>
+{% endblock %}
